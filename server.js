@@ -2,6 +2,8 @@ const express = require("express");
 const path = require("path");
 const http = require("http");
 const socketIo = require("socket.io");
+const util = require("./utils/msg");
+const userUtil = require("./utils/user");
 
 const app = express();
 
@@ -10,18 +12,41 @@ const socket = socketIo(server);
 
 app.use(express.static(path.join(__dirname, "public")));
 
+const bot = "admin";
+//all these connection "joinRoom" words are coming from frontend
 socket.on("connection", (skt) => {
-  console.log("hello new user");
-
-  //to single client
-  skt.emit("message", "Welcome to the chat");
-
-  //to sll client except the user itself
-  skt.broadcast.emit("message", "a new user joined the chat");
+  skt.on("join", ({ username, room }) => {
+    console.log("hello new user");
+    const us = userUtil.userJoin(skt.id, username, room);
+    //to single current client
+    skt.emit("message", util.formatMessage(bot, "Welcome to the chat"));
+    //to talk client except the user itself
+    skt.broadcast
+      .to(us.room)
+      .emit(
+        "message",
+        util.formatMessage(bot, "a new user " + username + " joined the chat")
+      );
+  });
 
   //brodacst to every one
+  //// socket.emit("message",)
 
-  // socket.emit("message",)
+  const current = userUtil.getCurrentUser(skt.id);
+  console.log(current);
+
+  //when user disconnect
+
+  skt.on("disconnect", () => {
+    //sending message to every one
+    socket.emit("message", util.formatMessage(bot, "A user has left the chat"));
+  });
+
+  //listen chatr message
+
+  skt.on("chatMessage", (msg) => {
+    socket.emit("message", util.formatMessage("hari", msg));
+  });
 });
 
 const port = 3000 || process.env.PORT;
