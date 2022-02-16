@@ -4,7 +4,6 @@ const userArr = [];
 
 exports.userJoin = (id, user, room) => {
   const us = { id, user, room };
-  console.log(us);
   userArr.push(us);
   return us;
 };
